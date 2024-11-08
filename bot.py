@@ -28,10 +28,9 @@ def menu(update, context):
     if query.data == "create_character":
         if query.from_user.id in character_data:
             query.edit_message_text("Персонаж уже создан.")
-            return ConversationHandler.END
         else:
             query.edit_message_text("Введите имя вашего персонажа:")
-            return NAME
+            return NAME  # Переход к первому состоянию ConversationHandler
     elif query.data == "view_character":
         if query.from_user.id in character_data:
             char_info = character_data[query.from_user.id].get_info()
@@ -77,11 +76,11 @@ def main():
     start_handler = CommandHandler("start", start)
 
     # Обработчик для меню
-    menu_handler = CallbackQueryHandler(menu)
+    menu_handler = CallbackQueryHandler(menu, pattern="create_character")
 
     # Обработчик для создания персонажа
     conv_handler = ConversationHandler(
-        entry_points=[CallbackQueryHandler(menu, pattern="create_character")],
+        entry_points=[CommandHandler("start", start)],  # Начало создания персонажа
         states={
             NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_name)],
             GENDER: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_gender)],
@@ -89,7 +88,7 @@ def main():
             CLASS: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_class)],
         },
         fallbacks=[],
-        per_chat=True  # Используем per_chat=True для отслеживания чата, не сообщений
+        per_chat=True
     )
 
     # Добавляем обработчики в приложение
