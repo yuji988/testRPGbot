@@ -117,17 +117,16 @@ def main():
     # Указываем URL вашего бота на Render
     webhook_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/webhook"
 
-    cconv_handler = ConversationHandler(
-    entry_points=[CallbackQueryHandler(create_character, pattern="create_character")],
-    states={
-        NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_name)],
-        GENDER: [CallbackQueryHandler(select_gender)],
-        RACE: [CallbackQueryHandler(select_race)],
-        CLASS: [CallbackQueryHandler(select_class)],
-    },
-    fallbacks=[CommandHandler("cancel", cancel)],
-    per_message=True  # Добавляем этот параметр
-)
+    conv_handler = ConversationHandler(
+        entry_points=[CallbackQueryHandler(create_character, pattern="create_character")],
+        states={
+            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_name)],
+            GENDER: [CallbackQueryHandler(select_gender)],
+            RACE: [CallbackQueryHandler(select_race)],
+            CLASS: [CallbackQueryHandler(select_class)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)]
+    )
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(conv_handler)
