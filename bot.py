@@ -70,7 +70,7 @@ def set_class(update, context):
 
 def main():
     # Создание приложения с токеном
-    application = Application.builder().token("7779425304:AAFLmdtoLH6bhyvj4jYVR4kb5GOniA1M6C4").build()
+    application = Application.builder().token("7779425304:AAEg3FA1vicST5AkwORBNaeDTLuvoTEbzKM").build()
 
     # Обработчик команды /start
     start_handler = CommandHandler("start", start)
