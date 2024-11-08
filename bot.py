@@ -85,7 +85,8 @@ def main():
             RACE: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_race)],
             CLASS: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_class)],
         },
-        fallbacks=[]
+        fallbacks=[],
+        per_message=True  # Устанавливаем per_message=True, чтобы избежать предупреждения
     )
 
     # Добавляем обработчики в приложение
