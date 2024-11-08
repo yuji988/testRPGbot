@@ -97,15 +97,7 @@ def main():
     application.add_handler(menu_handler)
     application.add_handler(conv_handler)
 
-    # Настройка вебхука
-    host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
-    webhook_url = f"https://{host}:443/webhook"
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=443,
-        url_path="/webhook",
-        webhook_url=webhook_url
-    )
+    
 
 if __name__ == "__main__":
     main()
