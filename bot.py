@@ -1,115 +1,90 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ConversationHandler, MessageHandler, filters, ContextTypes
-import os
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackQueryHandler, CommandHandler, ConversationHandler
+from character import Character
 
-# Определяем этапы разговора
-NAME, GENDER, RACE, CLASS = range(4)
+# Хранилище персонажей (в реальной версии лучше использовать базу данных)
+character_data = {}
 
-# Опции для выбора
-GENDERS = ["Мужчина", "Женщина"]
-RACES = ["Человек", "Эльф", "Гном", "Полурослик", "Полуорк"]
-CLASSES = ["Воин", "Лучник", "Вор", "Волшебник", "Бард"]
+# Статус для ConversationHandler
+CREATE_CHARACTER, NAME, GENDER, RACE, CLASS = range(5)
 
-# Начальная команда с бар-меню
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if "name" in context.user_data:
-        keyboard = [
-            [InlineKeyboardButton("Посмотреть персонажа", callback_data="show_character")],
-            [InlineKeyboardButton("Создать нового персонажа", callback_data="create_character")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text("Выберите действие:", reply_markup=reply_markup)
-    else:
-        await update.message.reply_text("Персонаж не найден. Давайте создадим нового!")
-        await create_character(update, context)
-
-async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Введите имя персонажа:")
-    return NAME
-
-async def set_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['name'] = update.message.text
-    keyboard = [[InlineKeyboardButton(gender, callback_data=gender) for gender in GENDERS]]
+def start(update, context):
+    # Кнопки для выбора действий
+    keyboard = [
+        [InlineKeyboardButton("Создать персонажа", callback_data="create_character")],
+        [InlineKeyboardButton("Мой персонаж", callback_data="view_character")]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Выберите пол персонажа:", reply_markup=reply_markup)
+    update.message.reply_text("Выберите действие:", reply_markup=reply_markup)
+
+def menu(update, context):
+    query = update.callback_query
+    query.answer()
+    if query.data == "create_character":
+        if query.from_user.id in character_data:
+            query.edit_message_text("Персонаж уже создан.")
+        else:
+            query.edit_message_text("Введите имя вашего персонажа:")
+            return NAME
+    elif query.data == "view_character":
+        if query.from_user.id in character_data:
+            char_info = character_data[query.from_user.id].get_info()
+            query.edit_message_text(f"Ваш персонаж:\n\n{char_info}")
+        else:
+            query.edit_message_text("У вас еще нет персонажа.")
+
+def set_name(update, context):
+    user_id = update.message.from_user.id
+    context.user_data['name'] = update.message.text
+    update.message.reply_text("Введите пол вашего персонажа:")
     return GENDER
 
-async def select_gender(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    context.user_data['gender'] = query.data
-
-    keyboard = [[InlineKeyboardButton(race, callback_data=race) for race in RACES]]
-    keyboard.append([InlineKeyboardButton("Назад", callback_data="back")])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text("Выберите расу персонажа:", reply_markup=reply_markup)
+def set_gender(update, context):
+    context.user_data['gender'] = update.message.text
+    update.message.reply_text("Введите расу вашего персонажа:")
     return RACE
 
-async def select_race(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    if query.data == "back":
-        keyboard = [[InlineKeyboardButton(gender, callback_data=gender) for gender in GENDERS]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("Выберите пол персонажа:", reply_markup=reply_markup)
-        return GENDER
-
-    context.user_data['race'] = query.data
-    keyboard = [[InlineKeyboardButton(class_, callback_data=class_) for class_ in CLASSES]]
-    keyboard.append([InlineKeyboardButton("Назад", callback_data="back")])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text("Выберите класс персонажа:", reply_markup=reply_markup)
+def set_race(update, context):
+    context.user_data['race'] = update.message.text
+    update.message.reply_text("Введите класс вашего персонажа:")
     return CLASS
 
-async def select_class(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    if query.data == "back":
-        keyboard = [[InlineKeyboardButton(race, callback_data=race) for race in RACES]]
-        keyboard.append([InlineKeyboardButton("Назад", callback_data="back")])
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("Выберите расу персонажа:", reply_markup=reply_markup)
-        return RACE
+def set_class(update, context):
+    user_id = update.message.from_user.id
+    name = context.user_data['name']
+    gender = context.user_data['gender']
+    race = context.user_data['race']
+    char_class = update.message.text
 
-    context.user_data['class'] = query.data
-    character_info = (
-        f"Ваш персонаж:\n"
-        f"Имя: {context.user_data['name']}\n"
-        f"Пол: {context.user_data['gender']}\n"
-        f"Раса: {context.user_data['race']}\n"
-        f"Класс: {context.user_data['class']}"
-    )
-    await query.edit_message_text(character_info)
+    # Создаем экземпляр персонажа и сохраняем его
+    character_data[user_id] = Character(name, gender, race, char_class)
+    update.message.reply_text("Персонаж создан!")
     return ConversationHandler.END
 
-async def show_character(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    character_info = (
-        f"Ваш персонаж:\n"
-        f"Имя: {context.user_data.get('name', 'Не задано')}\n"
-        f"Пол: {context.user_data.get('gender', 'Не задано')}\n"
-        f"Раса: {context.user_data.get('race', 'Не задано')}\n"
-        f"Класс: {context.user_data.get('class', 'Не задано')}"
-    )
-    await update.message.reply_text(character_info)
+# Handler для меню
+menu_handler = CallbackQueryHandler(menu)
 
-async def menu_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()
-    if query.data == "show_character":
-        character_info = (
-            f"Ваш персонаж:\n"
-            f"Имя: {context.user_data.get('name', 'Не задано')}\n"
-            f"Пол: {context.user_data.get('gender', 'Не задано')}\n"
-            f"Раса: {context.user_data.get('race', 'Не задано')}\n"
-            f"Класс: {context.user_data.get('class', 'Не задано')}"
-        )
-        await query.edit_message_text(character_info)
-    elif query.data == "create_character":
-        await create_character(update, context)
+# Handler для создания персонажа
+conv_handler = ConversationHandler(
+    entry_points=[menu_handler],
+    states={
+        NAME: [MessageHandler(filters.TEXT, set_name)],
+        GENDER: [MessageHandler(filters.TEXT, set_gender)],
+        RACE: [MessageHandler(filters.TEXT, set_race)],
+        CLASS: [MessageHandler(filters.TEXT, set_class)],
+    },
+    fallbacks=[]
+)
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Создание персонажа отменено.")
-    return ConversationHandler.END
+# Команда старта
+start_handler = CommandHandler("start", start)
+
+# Добавляем handlers в Application
+application.add_handler(start_handler)
+application.add_handler(conv_handler)
+application.add_handler(menu_handler)
+
+application.run_polling()
 
 def main():
     application = Application.builder().token("7779425304:AAFLmdtoLH6bhyvj4jYVR4kb5GOniA1M6C4").build()
