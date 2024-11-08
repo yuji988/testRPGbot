@@ -116,7 +116,7 @@ def main():
 
     # Получаем URL хоста из переменной окружения
     host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
-    webhook_url = f"https://{host}:8443/webhook"
+    webhook_url = f"https://{host}:443/webhook"
 
     conv_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(create_character, pattern="create_character")],
@@ -137,7 +137,7 @@ def main():
     # Настройка вебхука с использованием порта 8443
     application.run_webhook(
         listen="0.0.0.0",
-        port=8443,
+        port=443,
         url_path="/webhook",
         webhook_url=webhook_url
     )
