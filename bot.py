@@ -21,13 +21,14 @@ def start(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text("Выберите действие:", reply_markup=reply_markup)
 
-# Обработчик меню
+# Обработчик для кнопок в меню
 def menu(update, context):
     query = update.callback_query
     query.answer()
     if query.data == "create_character":
         if query.from_user.id in character_data:
             query.edit_message_text("Персонаж уже создан.")
+            return ConversationHandler.END
         else:
             query.edit_message_text("Введите имя вашего персонажа:")
             return NAME
@@ -75,10 +76,12 @@ def main():
     # Обработчик команды /start
     start_handler = CommandHandler("start", start)
 
-    # Обработчик для меню и создания персонажа
+    # Обработчик для меню
     menu_handler = CallbackQueryHandler(menu)
+
+    # Обработчик для создания персонажа
     conv_handler = ConversationHandler(
-        entry_points=[menu_handler],
+        entry_points=[CallbackQueryHandler(menu, pattern="create_character")],
         states={
             NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_name)],
             GENDER: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_gender)],
@@ -86,13 +89,13 @@ def main():
             CLASS: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_class)],
         },
         fallbacks=[],
-        per_chat=True  # Устанавливаем per_chat=True вместо per_message
+        per_chat=True  # Используем per_chat=True для отслеживания чата, не сообщений
     )
 
     # Добавляем обработчики в приложение
     application.add_handler(start_handler)
-    application.add_handler(conv_handler)
     application.add_handler(menu_handler)
+    application.add_handler(conv_handler)
 
     # Настройка вебхука
     host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
