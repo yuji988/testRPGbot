@@ -105,10 +105,10 @@ def main():
         url_path="/webhook",
         webhook_url=webhook_url
     )
-
+print("Starting the bot...")  # Начало выполнения main()
+print("Webhook URL:", webhook_url)  # Проверка URL вебхука
 if __name__ == "__main__":
     main()
 
-print("Starting the bot...")  # Начало выполнения main()
-print("Webhook URL:", webhook_url)  # Проверка URL вебхука
+
 
