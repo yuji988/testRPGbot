@@ -108,3 +108,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+print("Starting the bot...")  # Начало выполнения main()
+print("Webhook URL:", webhook_url)  # Проверка URL вебхука
+
