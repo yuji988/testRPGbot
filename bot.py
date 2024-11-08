@@ -86,7 +86,7 @@ def main():
             CLASS: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_class)],
         },
         fallbacks=[],
-        per_message=True  # Устанавливаем per_message=True, чтобы избежать предупреждения
+        per_chat=True  # Устанавливаем per_chat=True вместо per_message
     )
 
     # Добавляем обработчики в приложение
