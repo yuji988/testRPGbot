@@ -114,10 +114,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 def main():
     application = Application.builder().token("7779425304:AAFLmdtoLH6bhyvj4jYVR4kb5GOniA1M6C4").build()
 
-    # Получаем URL хоста и порта из переменных окружения
+    # Получаем URL хоста из переменной окружения
     host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
-    port = os.environ.get("PORT", 10000)
-    webhook_url = f"https://{host}:{port}/webhook"
+    webhook_url = f"https://{host}:8443/webhook"
 
     conv_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(create_character, pattern="create_character")],
@@ -128,21 +127,20 @@ def main():
             CLASS: [CallbackQueryHandler(select_class)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
-        per_message=False  # Убедитесь, что per_message выставлен в False
+        per_message=False
     )
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(conv_handler)
     application.add_handler(CallbackQueryHandler(menu_button_handler))
 
-    # Настройка вебхука
+    # Настройка вебхука с использованием порта 8443
     application.run_webhook(
         listen="0.0.0.0",
-        port=int(port),
+        port=8443,
         url_path="/webhook",
         webhook_url=webhook_url
     )
 
 if __name__ == "__main__":
     main()
-
